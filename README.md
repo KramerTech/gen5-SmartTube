@@ -46,6 +46,17 @@ If the app was installed before with a different signing key (an upstream APK, o
 
 ## Build a release
 
+Releases are built by GitHub Actions ([`release.yml`](.github/workflows/release.yml)). Push a tag named `v<upstream version>-gen5w.<revision>`:
+
+```sh
+git tag -a v32.68-gen5w.3 -m "What changed in this build"   # the message becomes the release notes and in-app changelog
+git push origin v32.68-gen5w.3
+```
+
+The workflow runs the tests, downloads that upstream release (verified against GitHub's SHA-256), patches and signs it, checks the signer against `SIGNING_CERT_SHA256`, and publishes the release with all the assets. The release text comes from [`.github/release-body.md`](.github/release-body.md). The job that holds the signing key has read-only access to the repo; a separate job publishes.
+
+To build locally instead:
+
 ```sh
 APK=$(tools/fetch-upstream.sh)        # latest upstream release; or: tools/fetch-upstream.sh 32.68s
 ./build.sh "$APK" 1 [notes.txt]       # revision 1-99 for this upstream version
@@ -68,7 +79,16 @@ Needs: python3, Java, [apktool](https://apktool.org) 2.9+, and the Android build
 
 ### Signing
 
-`build.sh` uses `$SMARTTUBE_KEYSTORE` (default `../smarttube-signing/smarttube.jks`), alias `$SMARTTUBE_KEY_ALIAS` (default `smarttube`), and the password in `pass.txt` next to the keystore. Every release must use the same key. A different key makes updates fail, and NEMESIS then reinstalls from scratch, which wipes everyone's SmartTube data. Back the key up, and keep it out of the repo.
+`build.sh` uses `$SMARTTUBE_KEYSTORE` (default `../smarttube-signing/smarttube.jks`), alias `$SMARTTUBE_KEY_ALIAS` (default `smarttube`), and the password from `$SMARTTUBE_KEY_PASS`, or else `pass.txt` next to the keystore. Every release must use the same key. A different key makes updates fail, and NEMESIS then reinstalls from scratch, which wipes everyone's SmartTube data. Back the key up, and keep it out of the repo. `build.sh` fails if the APK's signer doesn't match `SIGNING_CERT_SHA256` in `smarttube.conf`.
+
+CI reads the key from two repository secrets:
+
+```sh
+base64 -i smarttube.jks | gh secret set SMARTTUBE_KEYSTORE_B64 -R <owner>/<repo>
+gh secret set SMARTTUBE_KEY_PASS -R <owner>/<repo> < pass.txt
+```
+
+A fork that builds its own releases uses its own key, sets these secrets, and puts its certificate's digest in `SIGNING_CERT_SHA256`.
 
 ### The update check
 

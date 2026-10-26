@@ -14,9 +14,11 @@
 # apksigner) under $ANDROID_HOME (default ~/Library/Android/sdk).
 # Settings: smarttube.conf, then $SMARTTUBE_CONF if set.
 # Signing: $SMARTTUBE_KEYSTORE (default ../smarttube-signing/smarttube.jks),
-# alias $SMARTTUBE_KEY_ALIAS (default smarttube), password in pass.txt beside
-# the keystore. Every release must use the same key, or installs over an
-# older one fail and NEMESIS reinstalls (wiping SmartTube's data and sign-in).
+# alias $SMARTTUBE_KEY_ALIAS (default smarttube), password from
+# $SMARTTUBE_KEY_PASS or else pass.txt beside the keystore. Every release must
+# use the same key, or installs over an older one fail and NEMESIS reinstalls
+# (wiping SmartTube's data and sign-in). The signer must match
+# SIGNING_CERT_SHA256 in smarttube.conf.
 set -euo pipefail
 
 SRC_APK=${1:?usage: build.sh <upstream apk> <revision> [notes file]}
@@ -32,7 +34,8 @@ BT=$(ls -d "$ANDROID_HOME"/build-tools/* 2>/dev/null | tail -1)
 APKTOOL=${APKTOOL:-$(command -v apktool || echo "$HOME/.local/bin/apktool")}
 KEYSTORE=${SMARTTUBE_KEYSTORE:-$HERE/../smarttube-signing/smarttube.jks}
 KEY_ALIAS=${SMARTTUBE_KEY_ALIAS:-smarttube}
-KEYPASS=$(dirname "$KEYSTORE")/pass.txt
+if [ -n "${SMARTTUBE_KEY_PASS:-}" ]; then KS_PASS=env:SMARTTUBE_KEY_PASS
+else KS_PASS=file:$(dirname "$KEYSTORE")/pass.txt; fi
 DIST=$HERE/dist
 
 die() { echo "build: $*" >&2; exit 1; }
@@ -40,7 +43,8 @@ die() { echo "build: $*" >&2; exit 1; }
 [ -f "$SRC_APK" ] || die "no such APK: $SRC_APK"
 [ -x "$BT/aapt" ] && [ -x "$BT/zipalign" ] && [ -x "$BT/apksigner" ] || die "Android build-tools not found under $ANDROID_HOME"
 [ -x "$APKTOOL" ] || die "apktool not found (set APKTOOL)"
-[ -f "$KEYSTORE" ] && [ -f "$KEYPASS" ] || die "keystore or pass.txt not found: $KEYSTORE"
+[ -f "$KEYSTORE" ] || die "keystore not found: $KEYSTORE"
+[ "${KS_PASS#file:}" = "$KS_PASS" ] || [ -f "${KS_PASS#file:}" ] || die "no SMARTTUBE_KEY_PASS and no ${KS_PASS#file:}"
 
 # Upstream identity
 badging=$("$BT/aapt" dump badging "$SRC_APK")
@@ -64,12 +68,17 @@ trap 'rm -rf "$work"' EXIT
 python3 -I "$HERE/tools/patch.py" "$work/src" "$code" "$url"
 "$APKTOOL" b -o "$work/unsigned.apk" "$work/src" >/dev/null
 "$BT/zipalign" -f -p 4 "$work/unsigned.apk" "$work/aligned.apk"
-"$BT/apksigner" sign --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass "file:$KEYPASS" \
+"$BT/apksigner" sign --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass "$KS_PASS" \
     --min-sdk-version 19 --out "$work/SmartTube.apk" "$work/aligned.apk" 2>/dev/null
 rm -f "$work/SmartTube.apk.idsig"
 
 # Check the result, not just that the patch script ran
-"$BT/apksigner" verify --min-sdk-version 19 "$work/SmartTube.apk" >/dev/null 2>&1 || die "signature doesn't verify for API 19"
+certs=$("$BT/apksigner" verify --min-sdk-version 19 --print-certs "$work/SmartTube.apk" 2>/dev/null) \
+    || die "signature doesn't verify for API 19"
+if [ -n "$SIGNING_CERT_SHA256" ]; then
+    grep -qi "certificate SHA-256 digest: $SIGNING_CERT_SHA256\$" <<< "$certs" \
+        || die "signed with the wrong key (expected certificate SHA-256 $SIGNING_CERT_SHA256)"
+fi
 out_badging=$("$BT/aapt" dump badging "$work/SmartTube.apk")
 grep -q "versionCode='$code'" <<< "$out_badging" || die "versionCode not $code"
 grep -q "uses-permission: name='android.permission.GET_TASKS'" <<< "$out_badging" || die "GET_TASKS missing"
