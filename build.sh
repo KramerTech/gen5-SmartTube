@@ -92,16 +92,23 @@ assert "@VERSION@" in s
 open(p, "w").write(s.replace("@VERSION@", v))
 EOF
 
+# The package zip is for `nemesis install`. The USB handler only reads a
+# `type=` descriptor at the drive root, so extracting the package itself onto
+# a drive gives "Invalid package descriptor". The -usb zip wraps it in the
+# layout of NEMESIS's own release zips: extract it onto the drive root.
 rm -rf "$DIST" && mkdir -p "$DIST"
 zipname=smarttube-$label.zip
-python3 -I - "$stage" "$DIST/$zipname" <<'EOF'
+python3 -I - "$stage" "$DIST/$zipname" "$DIST/smarttube-$label-usb.zip" <<'EOF'
 import sys, zipfile
 from pathlib import Path
-src, out = Path(sys.argv[1]), Path(sys.argv[2])
+src, out, usb = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     for p in sorted(src.rglob("*")):
         if p.is_file() and not p.name.startswith((".", "._")):
             z.write(p, p.relative_to(src).as_posix())
+with zipfile.ZipFile(usb, "w", zipfile.ZIP_DEFLATED) as z:
+    z.writestr("NEMESIS.data", "[nemesis]\nversion=1.0\ntype=install\npath=packages/smarttube.zip\n")
+    z.write(out, "packages/smarttube.zip")
 EOF
 cp "$work/SmartTube.apk" "$DIST/$APK_ASSET"
 

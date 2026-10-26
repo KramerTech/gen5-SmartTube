@@ -32,7 +32,9 @@ Log: `/data/nemesis/smarttube.log`, plus `nemesis log service smarttube/depwatch
 ## Install
 
 1. Install `media.codecs` 2.0+ from [gen5-codec-patch releases](https://github.com/KramerTech/gen5-codec-patch/releases) first.
-2. Then install `smarttube-<version>.zip` by USB (`type=install`), or over ADB:
+2. Then install SmartTube. Each release has two zips:
+   - **USB:** extract `smarttube-<version>-usb.zip` onto the root of a FAT32 or exFAT drive, so the drive holds `NEMESIS.data` and `packages/smarttube.zip`. Keep only one NEMESIS package on the drive. With the head unit fully booted, plug the drive in and confirm the install prompt. If SmartTube is already installed, NEMESIS asks you to uninstall it first, which removes SmartTube's settings and sign-in. To update and keep them, use ADB.
+   - **ADB:** use `smarttube-<version>.zip`, the package itself. Don't extract this one onto a USB drive: NEMESIS will report "Invalid package descriptor".
    ```sh
    adb push smarttube-32.68-gen5w.2.zip /data/local/tmp/
    adb shell '/system/xbin/nemesis install --update /data/local/tmp/smarttube-32.68-gen5w.2.zip'
@@ -56,7 +58,8 @@ tests/run.sh                          # dependency logic, in a sandbox
 
 | File | |
 |---|---|
-| `smarttube-<ver>-gen5w.<rev>.zip` | the NEMESIS package |
+| `smarttube-<ver>-gen5w.<rev>.zip` | the NEMESIS package, for ADB |
+| `smarttube-<ver>-gen5w.<rev>-usb.zip` | the same package wrapped for USB install: extract onto a drive's root |
 | `smarttube-gen5w-armeabi-v7a.apk` | the patched APK (a fixed name, for the update check's download link) |
 | `smarttube-gen5w.json` | the update manifest in upstream's format (only when `UPDATE_REPO` is set) |
 | `SHA256SUMS` | checksums |

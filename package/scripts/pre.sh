@@ -1,6 +1,8 @@
 #!/system/bin/sh
 # Refuse to install without the codec fix SmartTube needs to play video.
 . ./scripts/common.sh
+# USB installs run from the usb-handler service, which may lack BOOTCLASSPATH.
+load_android_env || log "WARN: no framework environment; pm/am may fail"
 log "preinstall $ID"
 
 if ! dep_ok; then

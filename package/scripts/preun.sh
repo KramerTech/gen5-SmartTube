@@ -5,6 +5,8 @@
 # after this (and depwatch turns the app off again if it's still missing).
 # Either way nothing is left behind.
 . ./scripts/common.sh
+# USB installs run from the usb-handler service, which may lack BOOTCLASSPATH.
+load_android_env || log "WARN: no framework environment; pm/am may fail"
 log "preuninstall $ID"
 enable_app
 rmdir "$STATE" 2>/dev/null
