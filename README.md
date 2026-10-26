@@ -6,7 +6,7 @@
 
 ## What's patched
 
-The official armeabi-v7a APK, with five changes ([`tools/patch.py`](tools/patch.py)):
+The official armeabi-v7a APK, with six changes ([`tools/patch.py`](tools/patch.py)):
 
 | Change | Why |
 |---|---|
@@ -15,6 +15,7 @@ The official armeabi-v7a APK, with five changes ([`tools/patch.py`](tools/patch.
 | `update_urls` points at this project's releases | The in-app update check would otherwise offer upstream's APK, which isn't patched and is signed with a different key. With `UPDATE_REPO` empty in `smarttube.conf`, the list is empty and the check is off. |
 | `versionCode` becomes upstream × 100 + revision | Each revision of ours is an update over the previous one, and over upstream's build of the same version. |
 | Swiping in from the left edge goes Back | Gen5W has no Back button for third-party apps, and SmartTube is a TV app. SmartTube already has this gesture (Slidr) but only enables it on Android 5+. Lowering that gate to 4.4 turns it on. |
+| The swipe also works in the player | Slidr moves the screen with the finger by offsetting it, and every layout pass resets that offset. The player relayouts every second (the position text), so a swipe there ended with the screen back at 0 and Slidr treated it as cancelled. Slidr's panel now keeps the offset through layouts while a swipe is in progress. |
 
 The result is re-signed with this project's key. Each patch fails the build if a future SmartTube changes the code it targets.
 

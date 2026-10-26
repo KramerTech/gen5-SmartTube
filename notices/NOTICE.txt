@@ -9,6 +9,8 @@ Built from the official armeabi-v7a release APK, unmodified except for:
   - versionCode is upstream's versionCode * 100 + this project's revision
   - MotherActivity.initEdgeSlide() enables the left-edge swipe (Slidr) on
     Android 4.4 instead of only 5.0+
+  - Slidr's SliderPanel gets an onLayout that keeps the swipe offset while a
+    swipe is in progress
 and re-signed with this project's key.
 
 Third-party libraries inside the APK are distributed by upstream under their

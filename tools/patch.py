@@ -18,6 +18,11 @@ Patches (each fails loudly if SmartTube changed underneath it):
      (MotherActivity.initEdgeSlide, the Slidr library; a finished slide calls
      onBackPressed) but only enables it on API 21+. Its API-21-only call in
      Slidr is version-guarded, so the gate is lowered to API 19.
+  6. Edge swipe survives relayouts: Slidr's SliderPanel drags the content with
+     offsetLeftAndRight, and any layout pass puts it back at 0. In the player
+     the position text relayouts the window every second, so a swipe ends
+     with the content at 0 and Slidr treats it as cancelled. SliderPanel gets
+     an onLayout that restores the offset while a drag or settle is running.
 """
 import re
 import sys
@@ -96,6 +101,64 @@ def patch_edge_slide(root: Path) -> None:
     p.write_text(s, encoding="utf-8")
 
 
+SLIDER_ON_LAYOUT = """
+.method protected onLayout(ZIIII)V
+    .locals 2
+
+    iget-object v0, p0, Lcom/r0adkll/slidr/widget/SliderPanel;->decorView:Landroid/view/View;
+
+    invoke-virtual {v0}, Landroid/view/View;->getLeft()I
+
+    move-result v0
+
+    invoke-super/range {p0 .. p5}, Landroid/widget/FrameLayout;->onLayout(ZIIII)V
+
+    iget-object v1, p0, Lcom/r0adkll/slidr/widget/SliderPanel;->dragHelper:Lcom/r0adkll/slidr/util/ViewDragHelper;
+
+    if-eqz v1, :done
+
+    invoke-virtual {v1}, Lcom/r0adkll/slidr/util/ViewDragHelper;->getViewDragState()I
+
+    move-result v1
+
+    if-eqz v1, :done
+
+    iget-object v1, p0, Lcom/r0adkll/slidr/widget/SliderPanel;->decorView:Landroid/view/View;
+
+    invoke-virtual {v1}, Landroid/view/View;->getLeft()I
+
+    move-result p1
+
+    sub-int/2addr v0, p1
+
+    invoke-virtual {v1, v0}, Landroid/view/View;->offsetLeftAndRight(I)V
+
+    :done
+    return-void
+.end method
+"""
+
+
+def patch_slider_layout(root: Path) -> None:
+    hits = [
+        f for d in sorted(root.glob("smali*"))
+        for f in d.rglob("SliderPanel.smali")
+        if f.read_text(encoding="utf-8").startswith(".class public Lcom/r0adkll/slidr/widget/SliderPanel;")
+    ]
+    if len(hits) != 1:
+        raise SystemExit(f"SliderPanel.smali: expected 1, found {len(hits)} - SmartTube changed, re-check the slider layout patch")
+    p = hits[0]
+    s = p.read_text(encoding="utf-8")
+    needed = (
+        ".super Landroid/widget/FrameLayout;",
+        ".field private decorView:Landroid/view/View;",
+        ".field private dragHelper:Lcom/r0adkll/slidr/util/ViewDragHelper;",
+    )
+    if not all(n in s for n in needed) or " onLayout(ZIIII)V" in s:
+        raise SystemExit("SliderPanel no longer looks like Slidr's FrameLayout without an onLayout - re-check the slider layout patch")
+    p.write_text(s.rstrip("\n") + "\n" + SLIDER_ON_LAYOUT, encoding="utf-8")
+
+
 def main() -> None:
     root, code = Path(sys.argv[1]), int(sys.argv[2])
     url = sys.argv[3] if len(sys.argv) > 3 else ""
@@ -104,7 +167,8 @@ def main() -> None:
     patch_update_urls(root, url)
     patch_version_code(root, code)
     patch_edge_slide(root)
-    print(f"patched: GET_TASKS, Conscrypt, update_urls={url or '(empty: update check off)'}, versionCode={code}, edge-swipe back")
+    patch_slider_layout(root)
+    print(f"patched: GET_TASKS, Conscrypt, update_urls={url or '(empty: update check off)'}, versionCode={code}, edge-swipe back (+ relayout fix)")
 
 
 if __name__ == "__main__":
