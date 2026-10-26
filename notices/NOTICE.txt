@@ -1,0 +1,15 @@
+This package contains a modified build of SmartTube
+(https://github.com/yuliskov/SmartTube), Copyright (c) 2020-present yuliskov,
+distributed under the MIT License (SmartTube-LICENSE.txt).
+
+Built from the official armeabi-v7a release APK, unmodified except for:
+  - AndroidManifest.xml: adds the android.permission.GET_TASKS permission
+  - NetworkData.isConscryptEnabled() always returns true
+  - the update_urls resource points at this project's releases (or is empty)
+  - versionCode is upstream's versionCode * 100 + this project's revision
+  - MotherActivity.initEdgeSlide() enables the left-edge swipe (Slidr) on
+    Android 4.4 instead of only 5.0+
+and re-signed with this project's key.
+
+Third-party libraries inside the APK are distributed by upstream under their
+own licenses, unchanged.
