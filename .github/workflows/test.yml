@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # mksh is Android's shell, so the hooks run the way the head unit runs them.
       - run: sudo apt-get install -y mksh
       - run: tests/run.sh
