@@ -11,6 +11,10 @@ Built from the official armeabi-v7a release APK, unmodified except for:
     Android 4.4 instead of only 5.0+
   - Slidr's SliderPanel gets an onLayout that keeps the swipe offset while a
     swipe is in progress
+  - MotherActivity.onCreate() calls a new class, org.gen5w.DrivingGuard,
+    which closes SmartTube when the head unit's regulation service reports
+    the car out of park; adds the com.hkmc.permission.AUTOMOTIVE_REGULATION
+    permission
 and re-signed with this project's key.
 
 Third-party libraries inside the APK are distributed by upstream under their
