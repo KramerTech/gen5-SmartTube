@@ -5,7 +5,7 @@
 #        ./build.sh "$(tools/fetch-upstream.sh)" 1
 #
 # Outputs in dist/:
-#   smarttube-<ver>-gen5w.<rev>.zip   NEMESIS package (needs media.codecs installed)
+#   smarttube-<ver>-gen5w.<rev>.zip   NEMESIS package (depends on media.codecs)
 #   $APK_ASSET                        the patched, signed APK
 #   $MANIFEST_ASSET                   in-app update manifest (only if UPDATE_REPO is set)
 #   SHA256SUMS
@@ -55,6 +55,9 @@ up_name=$(sed -n "s/^package: .*versionName='\([^']*\)'.*/\1/p" <<< "$badging")
 grep -q "^native-code: .*'armeabi-v7a'" <<< "$badging" || die "not an armeabi-v7a build"
 code=$((up_code * 100 + REV))
 label=$up_name-gen5w.$REV
+# NEMESIS's package-version must be dotted numbers.
+pkgver=$up_name.$REV
+[[ $pkgver =~ ^[0-9]+(\.[0-9]+)+$ ]] || die "upstream version $up_name doesn't make a dotted package-version"
 url=
 [ -n "$UPDATE_REPO" ] && url="https://github.com/$UPDATE_REPO/releases/latest/download/$MANIFEST_ASSET"
 echo "SmartTube $up_name ($up_code) -> $label, versionCode $code"
@@ -91,14 +94,15 @@ stage=$work/package
 cp -R "$HERE/package" "$stage"
 mkdir -p "$stage/app" "$stage/notices"
 cp "$work/SmartTube.apk" "$stage/app/SmartTube.apk"
-printf 'CODECS_MIN_VERSION="%s"\n' "$CODECS_MIN_VERSION" > "$stage/scripts/dep.conf"
 cp "$HERE"/notices/* "$stage/notices/"
-python3 -I - "$stage/NEMESIS.data" "$label" <<'EOF'
+python3 -I - "$stage/NEMESIS.data" "$pkgver" "$CODECS_MIN_VERSION" <<'EOF'
 import sys
-p, v = sys.argv[1], sys.argv[2]
+p, v, codecs = sys.argv[1:4]
 s = open(p).read()
-assert "@VERSION@" in s
-open(p, "w").write(s.replace("@VERSION@", v))
+for k, x in (("@PACKAGE_VERSION@", v), ("@CODECS_MIN_VERSION@", codecs)):
+    assert k in s, k
+    s = s.replace(k, x)
+open(p, "w").write(s)
 EOF
 
 # The package zip is for `nemesis install`. The USB handler only reads a

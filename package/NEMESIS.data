@@ -1,21 +1,16 @@
 [nemesis]
-version=@VERSION@
+version=1.1
 id=smarttube
 name=SmartTube
-types=application,service
-preinstall=scripts/pre.sh
-postinstall=scripts/post.sh
-preuninstall=scripts/preun.sh
+type=application
+package-version=@PACKAGE_VERSION@
+short-desc=SmartTube for Gen5W head units
+depends=media.codecs@>=@CODECS_MIN_VERSION@
+os=any
+models=any
 
 [app.0]
 kind=apk
 path=app/SmartTube.apk
 package=org.smarttube.stable
 component=org.smarttube.stable/com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity
-
-[service.0]
-name=depwatch
-kind=sh
-path=svc/depwatch.sh
-uid=root
-mode=restart

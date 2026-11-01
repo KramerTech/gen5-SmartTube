@@ -1,6 +1,6 @@
 SmartTube @VERSION@, patched for Gen5W head units (Android 4.4), as a NEMESIS package.
 
-**Install [gen5-codec-patch](https://github.com/KramerTech/gen5-codec-patch/releases) (`media.codecs` @CODECS_MIN_VERSION@+) first.** This package won't install without it, and it turns SmartTube off if the codec package is removed later.
+**Install [gen5-codec-patch](https://github.com/KramerTech/gen5-codec-patch/releases) (`media.codecs` @CODECS_MIN_VERSION@+) first.** It's required for on-device video playback. Needs NEMESIS 1.16 or newer, which checks the dependency and won't let the codec package be removed while SmartTube is installed.
 @CHANGES@
 What's different from upstream SmartTube (details in the README):
 - Runs on Gen5W: upstream's APK crashes on the splash screen and can't load anything on these units.

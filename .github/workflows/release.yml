@@ -37,10 +37,6 @@ jobs:
             : > "$RUNNER_TEMP/notes.txt"
           fi
 
-      # mksh is Android's shell, so the hooks run the way the head unit runs them.
-      - run: sudo apt-get install -y mksh
-      - run: tests/run.sh
-
       - name: Install apktool
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
