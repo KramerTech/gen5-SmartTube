@@ -28,11 +28,21 @@ Input SHA-256:
   Approved-interface simulation uses `lab-eth0`, which refuses to run unless
   `ro.kernel.qemu=1`; production policy remains `wlan0` only.
 
-**Not yet validated:** Gen5W playback/audio, real Wi-Fi throughput or latency,
-the OEM media popup, NEMESIS install/update/uninstall on hardware, and Android
-Auto internet sharing. This is a candidate for hardware testing, not a claim
-that SmartTube has already been confirmed working in a car. The DNS change
-addresses a routing gap; no speed improvement has been measured.
+## Head-unit feedback (WiFi-Back-Test1, 2026-11-06)
+
+- User confirms the slow connection issue is fixed on their head unit. This is
+  an observed improvement, not an instrumented throughput/latency benchmark.
+- The OEM media screen still appears on the first video play. Do not mark this
+  issue resolved by the current audio-focus handoff patch.
+- User had to uninstall before installing this test package. The local test key
+  differs from the official signing key; this does not validate same-key updates.
+- No sign-in code/QR was reported in a previous test. Whether that also occurs
+  in WiFi-Back-Test1 is awaiting clarification; account sign-in is not validated.
+
+Still unconfirmed: complete audio/Back behavior on hardware, same-key update
+and uninstall cleanup, and Android Auto internet sharing. The emulator sign-in
+experiment did not establish successful live authentication and is not evidence
+of a sign-in fix. The PR remains a draft pending these checks.
 
 Maintainer builds should use the existing signing key and the next downstream
 revision. The local test signature cannot update an existing official install.
