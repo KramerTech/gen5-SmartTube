@@ -1,13 +1,15 @@
 #!/system/bin/sh
-# Runs on uninstall and before an update, after netguard is stopped: remove its
-# firewall rules so the uid, which Android hands out again, isn't left blocked.
-# From `nemesis install` over ADB this has no CAP_NET_ADMIN and does nothing;
-# an update's netguard rebuilds the chain for the new uid, and after an
-# uninstall the rules go at the next reboot.
+# NEMESIS stops netguard before this script. Stop sockets before removing policy.
 export PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
+am force-stop org.smarttube.stable || exit 1
+HERE=${0%/*}
+sh "$HERE/../svc/netguard.sh" cleanup || exit 1
+# Remove the previous release's owner-filter chain during migration as well.
 for ipt in iptables ip6tables; do
-    $ipt -D OUTPUT -j smarttube_net 2>/dev/null
-    $ipt -F smarttube_net 2>/dev/null
-    $ipt -X smarttube_net 2>/dev/null
+    while "$ipt" -C OUTPUT -j smarttube_net >/dev/null 2>&1; do
+        "$ipt" -D OUTPUT -j smarttube_net || exit 1
+    done
+    if "$ipt" -n -L smarttube_net >/dev/null 2>&1; then
+        "$ipt" -F smarttube_net && "$ipt" -X smarttube_net || exit 1
+    fi
 done
-exit 0

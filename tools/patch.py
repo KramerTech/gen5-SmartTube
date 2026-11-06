@@ -403,6 +403,46 @@ def patch_driving_guard(root: Path) -> None:
     add_permission(root, "com.hkmc.permission.AUTOMOTIVE_REGULATION")
 
 
+def patch_wifi_audio(root: Path) -> None:
+    """Small, fail-loud hooks; helper Java is compiled by build.sh on every build."""
+    def one(name: str) -> Path:
+        hits = list(root.glob(f"smali*/**/{name}.smali"))
+        if len(hits) != 1:
+            raise SystemExit(f"{name}: expected one class, found {len(hits)}; re-check Wi-Fi/audio hooks")
+        return hits[0]
+
+    def hook_method(name: str, signature: str, hook: str) -> None:
+        p = one(name)
+        s = p.read_text(encoding="utf-8")
+        pattern = rf"(^\.method {re.escape(signature)}\n\s+\.locals \d+\n)"
+        s, count = re.subn(pattern, lambda m: m[0] + "\n    " + hook + "\n", s, flags=re.M)
+        if count != 1 or s.count(hook) != 1:
+            raise SystemExit(f"{name}.{signature}: missing/duplicate hook; upstream changed")
+        p.write_text(s, encoding="utf-8")
+
+    hook_method("MotherActivity", "protected onResume()V",
+                "invoke-static {p0}, Lorg/gen5w/ForegroundAudio;->onResume(Landroid/app/Activity;)V")
+    hook_method("MotherActivity", "protected onPause()V",
+                "invoke-static {p0}, Lorg/gen5w/ForegroundAudio;->onPause(Landroid/app/Activity;)V")
+    hook_method("RealCall", "getResponseWithInterceptorChain()Lokhttp3/Response;",
+                "invoke-static {}, Lorg/gen5w/NetworkGate;->check()V")
+    hook_method("DefaultHttpDataSource", "public open(Lcom/google/android/exoplayer2/upstream/DataSpec;)J",
+                "invoke-static {}, Lorg/gen5w/NetworkGate;->check()V")
+    p = one("AudioFocusManager")
+    s = p.read_text(encoding="utf-8")
+    replacements = (
+        ("invoke-virtual {v0, v1, v2, v3}, Landroid/media/AudioManager;->requestAudioFocus(Landroid/media/AudioManager$OnAudioFocusChangeListener;II)I",
+         "invoke-static {v0, v1, v2, v3}, Lorg/gen5w/ForegroundAudio;->request(Landroid/media/AudioManager;Landroid/media/AudioManager$OnAudioFocusChangeListener;II)I"),
+        ("invoke-virtual {v0, v1}, Landroid/media/AudioManager;->abandonAudioFocus(Landroid/media/AudioManager$OnAudioFocusChangeListener;)I",
+         "invoke-static {v0, v1}, Lorg/gen5w/ForegroundAudio;->abandon(Landroid/media/AudioManager;Landroid/media/AudioManager$OnAudioFocusChangeListener;)I"),
+    )
+    for before, after in replacements:
+        if s.count(before) != 1 or after in s:
+            raise SystemExit("AudioFocusManager legacy focus calls changed; re-check audio handoff")
+        s = s.replace(before, after)
+    p.write_text(s, encoding="utf-8")
+
+
 def main() -> None:
     root, code = Path(sys.argv[1]), int(sys.argv[2])
     url = sys.argv[3] if len(sys.argv) > 3 else ""
@@ -413,7 +453,8 @@ def main() -> None:
     patch_edge_slide(root)
     patch_slider_layout(root)
     patch_driving_guard(root)
-    print(f"patched: GET_TASKS, Conscrypt, update_urls={url or '(empty: update check off)'}, versionCode={code}, edge-swipe back (+ relayout fix), driving guard")
+    patch_wifi_audio(root)
+    print(f"patched: GET_TASKS, Conscrypt, update_urls={url or '(empty: update check off)'}, versionCode={code}, edge-swipe back (+ relayout fix), driving guard, Wi-Fi readiness gate, foreground audio handoff")
 
 
 if __name__ == "__main__":

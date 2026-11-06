@@ -68,6 +68,7 @@ trap 'rm -rf "$work"' EXIT
 
 # Patch
 "$APKTOOL" d -f -o "$work/src" "$SRC_APK" >/dev/null
+ANDROID_HOME="$ANDROID_HOME" APKTOOL="$APKTOOL" bash "$HERE/tools/compile-helper.sh" "$work/src" "$BT"
 python3 -I "$HERE/tools/patch.py" "$work/src" "$code" "$url"
 "$APKTOOL" b -o "$work/unsigned.apk" "$work/src" >/dev/null
 "$BT/zipalign" -f -p 4 "$work/unsigned.apk" "$work/aligned.apk"

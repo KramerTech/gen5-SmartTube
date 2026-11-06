@@ -15,7 +15,17 @@ Built from the official armeabi-v7a release APK, unmodified except for:
     which closes SmartTube when the head unit's regulation service reports
     the car out of park; adds the com.hkmc.permission.AUTOMOTIVE_REGULATION
     permission
+  - MotherActivity lifecycle and ExoPlayer legacy audio-focus calls use a small
+    API-19 helper to retain focus during internal navigation, releasing on exit
+  - OkHttp API calls and ExoPlayer HTTP opens check fresh per-app guard state
+  - a one-time Wi-Fi/BlueLink network notice is shown
+  - the NEMESIS service pins this UID's Android 4.4 DNS to Wi-Fi and filters
+    app and proxied DNS traffic for both IP families
 and re-signed with this project's key.
 
 Third-party libraries inside the APK are distributed by upstream under their
 own licenses, unchanged.
+
+The network guard and network-state rule adapt the Jellyfin on GEN5W wrapper
+(https://github.com/ntwm787/Jellyfin-on-GEN5W), Copyright (c) 2026 Gen5W
+Jellyflix wrapper contributors, MIT licensed (Jellyfin-wrapper-MIT.txt).

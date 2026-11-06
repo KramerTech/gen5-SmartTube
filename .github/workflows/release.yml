@@ -46,7 +46,11 @@ jobs:
           printf '#!/bin/sh\nexec java -jar "%s" "$@"\n' "$RUNNER_TEMP/bin/apktool.jar" > "$RUNNER_TEMP/bin/apktool"
           chmod +x "$RUNNER_TEMP/bin/apktool"
           echo "APKTOOL=$RUNNER_TEMP/bin/apktool" >> "$GITHUB_ENV"
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0" > /dev/null
+          echo "APKTOOL_JAR=$RUNNER_TEMP/bin/apktool.jar" >> "$GITHUB_ENV"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0" "platforms;android-30" > /dev/null
+
+      - name: Helper regression checks
+        run: python3 -m unittest discover -s tests -v
 
       - name: Fetch upstream APK
         id: upstream
