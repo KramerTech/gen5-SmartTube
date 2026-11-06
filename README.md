@@ -8,6 +8,7 @@
 
 - **It runs on Gen5W.** Upstream's APK crashes on the splash screen and can't load anything on these units. This build fixes both.
 - **Swipe in from the left edge of the screen to go back,** including out of the video player. Gen5W has no Back button for apps like this one.
+- **It only uses Wi-Fi or a Bluetooth/USB hotspot, never the car's built-in modem.** The car's own connection isn't meant for streaming, and using it for that could get the car's connected services restricted. With no Wi-Fi or hotspot, SmartTube just can't connect. The rule is applied a few seconds after install and at every boot; its log is `/data/nemesis/logs/smarttube/netguard.log`.
 - **It only works in park.** Outside park, SmartTube shows the head unit's standard "not available while driving" message and closes, the same way the unit's own apps lock down. If it's playing when you shift out of park, it stops and closes.
 
 ## Install

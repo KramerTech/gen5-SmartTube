@@ -5,6 +5,7 @@ SmartTube @VERSION@, patched for Gen5W head units (Android 4.4), as a NEMESIS pa
 What's different from upstream SmartTube (details in the README):
 - Runs on Gen5W: upstream's APK crashes on the splash screen and can't load anything on these units.
 - Swipe in from the left edge of the screen to go back, including out of the video player.
+- Only uses Wi-Fi or a Bluetooth/USB hotspot, never the car's built-in modem.
 - Only works in park: outside park it shows the head unit's "not available while driving" message and closes.
 
 Install over ADB with `nemesis install --update @ZIP@`, or by USB: extract `@USBZIP@` onto the root of a FAT32/exFAT drive and plug it in (a USB install over an existing SmartTube asks to uninstall it first, which resets its settings; use ADB to keep them). Check downloads against `SHA256SUMS`. If SmartTube was previously installed from another source with a different signing key, it gets reinstalled, which resets its settings and sign-in.
